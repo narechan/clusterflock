@@ -1,0 +1,235 @@
+## QUICK START ##
+
+Clusterflock clusters entities using a modified flocking algorithm.
+
+Copy clusterflock.pl into your $PATH and install dependencies.
+
+Run clusterflock like so:
+
+clusterflock.pl -i indir_fastas/ -c config.boids.simulations -l table_of_distances \
+-s all -b 1 -d -x -o output_dir/
+
+Find the flocking movie in output_dir/final.gif
+
+## INTRODUCTION TO CLUSTERFLOCK ##
+
+Clusterflock is a program that attempts to capture the inherent intelligence
+in swarming organisms to perform clustering tasks. Our particular application 
+is evolutionary: we set out çto cluster genes that share the same phylogenetic 
+history. But the technique is general, and can be used to cluster any set of 
+entities with precalculated pairwise distances. Importantly, clusterflock 
+requires no prior estimation of the number of clusters to expect (as in Kmeans) or 
+arbitrary cutoff for what constitutes true difference between pairs (as in 
+hierarchical clustering).
+
+Clusterflock and associated scripts are written in PERL. All components are 
+free and available through the GNU GPL.
+
+## MAIN PROGRAMS ##
+
+clusterflock.pl is the main flocking/clustering engine.
+
+pp_pa.pl is a post-processing utility designed to create a flock matrix from 
+clusterflock replicates.
+
+clusterflock_simulations.pl is a wrapper around clusterflock.pl designed to test 
+your installation
+
+## INSTALLATION ##
+
+To install clusterflock copy clusterflock.pl, pp_pa.pl, and 
+clusterflock_simulations.pl into your $PATH
+
+Though the flocking algorithm itself is implemented in pure PERL, several downstream 
+components involving drawing frames, computing density based clusters from those frames, 
+and compiling movies require external pieces of software called by clusterflock.pl 
+and clusterflock_simulations.pl. These include:
+
+Gnuplot, for plotting frames as gifs.
+(clusterflock-0.1/dependencies/gnuplot-5.0.1.tar.gz)
+
+Gifscicle, for creating animated gifs.
+(clusterflock-0.1/dependencies/gifsicle-1.88.tar.gz)
+
+ELKI, for spatial clustering of flocking frames, particularly the OPTICS clustering 
+algorithm. The full path to the location of the ELKI jar file must be specified in the 
+clusterflock config file as detailed below.
+(clusterflock-0.1/dependencies/elki-bundle-0.6.5~20141030.jar)
+
+Clusterflock.pl also requires the following perl modules (readily installed through CPAN):
+Getopt::Long
+Pod::Usage
+POSIX
+List::MoreUtils qw(part)
+List::Util qw(shuffle)
+Chart::Gnuplot
+
+Clusterflock_simulations.pl requires the following perl modules (cpan):
+use Parallel::ForkManager;
+use Statistics::Descriptive;
+
+## EXECUTING THE SIMULATIONS SCRIPT TO TEST YOUR INSTALLATION ##
+
+We have included clusterflock_simulations.pl to check that clusterflock is installed 
+correctly and working as expected. The folder clusterflock-0.1/test_data contains 
+simulated data organized as subdirectories ennumerated according to the number of 
+underlying topologies modeled. So for example, if you wish to test clusterflock with 100 
+replicates on a 100 partitions dataset whose loci are described by four topologies, you would run:
+
+clusterflock_simulations.pl -c config.boids.simulations -r 100 -p 100 -o test_out/ \
+-i test_data/4/fastas/ -l test_data/4/4.lds -j /path/to/elki.jar -k 4 -f 500
+
+Note that this will fork each clusterflock replicated in parallel. If you don't have 
+access to a multicore machine, reduce -p.
+
+To execute the test across all the input test data of varying topological complexity, do 
+something like this:
+
+for i in {1..25}; do clusterflock_simulations.pl -c config.boids.simulations -r 100 -p 100 \
+-o test_out/"$i" -i test_data/"$i"/fastas/ -l test_data/"$i"/"$i".lds \
+-j /path/to/elki.jar -k "$i" -f 500 > jaccard.sequence."$i"; done &
+
+This will iterate the analysis over datasets modeled on anywhere from 1 to 25 underlying 
+topologies as described in the paper. You can compare the resulting curve of Jaccard Indices 
+to the data in clusterflock-0.1/test_results/test.data.jaccard.curve. They should resemble one 
+another.
+
+Details on options available to clusterflock_simulations.pl:
+	--indir is your directory of flocked entities. In our case and in the test datasets
+		these are sets of orthologous genes. But they can be anything.
+	--cfconfig is the configuration of your flocking simulation. config.boids.simulations 
+		   provided with the distribution is optimized for the analysis of the 
+		   simulated datasets. See section on clusterflock.pl below for more details 
+		   of configuration options available.
+	--outdir is your output directory. See section on clusterflock output for a detailed 
+		 description of this directory and all its components
+	--list is a precomputed list of distance stats between all pairwise comparisons of data 
+	       found in --indir. Should adhere to a two column format: entity1ventity2\tdistance.
+	--cfreps is set to the number of flocking replicates desired
+	--jarfile is the path to the ELKI jar file for a k-means analysis of the final frame of 
+		  each clusterflock replicate
+	--kmeans is set to the number of flocks you expect given the topological complexity. 
+		 Since this is known in simulation, we use k-means which performs well when 
+		 expected clusters are known.
+	--finalframe is set to the number of iterations in each clusterflock replicate. The final 
+		     frame is the one taken to have the most complete information about the clusters.
+ 
+## RUNNING CLUSTERFLOCK ##
+
+Clusterflock.pl is the main engine of the flocking procedure. Groups emerge through 
+self organization with pairwise distances as the only rquired input. Distances weight the 
+flocking vectors directly and clusters spontaneously form and accrete without seeding. 
+
+Run clusterflock like this:
+
+clusterflock.pl -i indir_fastas/ -c config.boids.simulations -l table_of_distances \
+-s all -b 1 -d -x -o output_dir/
+
+Details on options available to clusterflock.pl:
+	--indir is your directory of flocked entities.	
+	--outdir is your output directory. See below for more details
+	--list is a precomputed list of distance stats	 
+	--perception is a heuristic designed to encode the perceptive acuity of each agent.
+		     It limits the number of checks a given agent needs to make within its 
+		     radius. If set to 'all', all possible neighbors will be assayed. 
+		     Otherwise, this quantity is used as the maximum number of checks that 
+		     will be made per agent.
+	--binlattice is a heuristic designed to reduce the number of neighborhood checks 
+		     that must be made by constructing a spatial hash of the virtual space.
+		     Only sectors immediately surrounding the sector occupied by an agent in 
+		     question need be checked, therefore reducing the number of comparisons 
+		     required to find individuals within that agent's radius.
+	--draw is set if you would like to draw each frame for subsequent compilation into 
+	       an animated gif. This option turns on a series of routines that paint each 
+	       frame using gnuplot.
+	--optics is set if you would like to spatially cluster each frame using the OPTICS 
+		 algorithm in ELKI. We use OPTICS because it is in the same spirit as flocking 
+		 itself: it requires no estimates of clusters expected.
+	--config is the configuration for the flocking run. This file controls the fine 
+		 details of the steering vectors and the flocking space. We provide to example 
+		 configurations, one that is optimized for our simulated datasets 
+		 (config.boids.simulations) and one empirically optimized for our S. aureus 
+		 dataset (config.boids). Details of each parameter in the configuration are 
+		 shown here:
+		 
+
+		 	DIMMENSIONS define the square virtual space that the entities travel.
+			RADIUS defines the neighborhood within which an entity must check the 
+	       		       	 behavior of its flockmates
+			BOUNDARY defines the boarder of the virtual space to signal that an 
+	         		 entitiy must bounce of the wall.
+			INIT_VELOCITY defines the initial velocity of all entities.
+			VELOCITY_LIMIT defines an upper bound for the velocity of entities.
+			ITERATIONS defines the number of frames in the simulation.
+			SEPARATION_DISTANCE defines the minimum distance between flocking entities.
+			COHESION_FACTOR modulates the strength of the cohesion vector; decreasing 
+				 this factor increases the cohesive effect.
+			ALIGNMENT_FACTOR modulates the strength of the alignment vector;
+				 decreasing this factor increases the alignment effect.
+			REPEL_FACTOR modulates the strength of the repulsion vector; increasing 
+		     		 this factor increases the repulsive effect.
+			JARFILE specifies the full path to the ELKI jar file for OPTICS clustering.
+			MINPTS defines the minimum number fo points to call an OPTICS cluster.
+			XI defines the OPTICS contrast parameter for establishing the relative 
+	   		   	 decrease in density.
+
+## POST-PROCESSING ##
+
+Post-processing a clusterflock experiment usually involves combining data from across several 
+clusterflock replicates. We accomplish this by coding flocking information across replicates 
+as data in a character matrix. You can accomplish this task using the bundled pp_pa.pl (post 
+processing presence absence) script.
+
+Run it like this:
+
+pp_pa.pl -f flocking_replicates/ -i indir_fastas/ -s 500 -e 500
+
+Details on options available to pp_pa.pl:
+	--flockdir is a directory containing clusterflock output directories, one per replicate calculated.
+	--indir is the directory of flocked entities.
+	--burnstart sets the first frame to mine for flocks. All frames prior to this one 
+		    are ignored.
+	--burnend sets the last frame to mine for flocks. All frames after this one are ignored.
+		  In most situations burnstart = burnend = ITERATIONS; in other words, we 
+		  typically only use the final frame to call our clusters as it is likely the 
+		  most mature/stable of all frames to that point. Because flocking is stochastic 
+		  this is far from guaranteed.
+
+
+## OUTPUT ##
+
+For clusterflock.pl, there are a number of output files:
+
+flocks.log contains the number of flocks found by OPTICS clustering for each 
+frame. This data is only available if OPTICS clustering is set to on.
+
+final.gif contains the final movie of the flocking procedure. The movie is only 
+available if gnuplot drawing is set to on.
+
+flocks/ contains the raw output of ELKI OPTICS calculations for each frame as 
+well as parsed flock membership tables.
+
+images/ contains gifs drawn for each frame if gnuplot drawing is set to on.
+
+logs/ contains logs for pairwise distances accessed for each iteration and 
+      a given frame's positional information for each entity.
+
+posvel/ contains logs of positional and velocity information for each entity.
+
+ild/ contains commands and logs for the realtime calculation of evolutionary 
+     distances as entities encounter each other in the virtual space. 
+     For this version of the software we have eliminated this function, but users 
+     should contact the authors for plugins that will reinstate this ability or 
+     separate pipelines that will calculate all-against-all LD distances.
+
+clusterflock's STDERR logs several metrics of interest. Lines beginning with 
+ITERATION contain the following tab delimited data: 1. The number of unique ILD 
+lookups for the entire simulation; 2. the total number of realtime distance calculations 
+(eliminated); 3. the total number of distance lookups from cache; 4. the total 
+number of pairwise comparisons calculated for this iteration post spatial hashing 
+and perception heuristics; 5. the total number of necessary pairwise comparisons 
+per iteration per entity.
+
+For pp_pa.pl a flock matrix is printed to STDOUT. This flock matrix can then be used in any 
+tree building program to assess the robustness of entities that flock together 
+across multiple replicates of the clusterflock simulation.
