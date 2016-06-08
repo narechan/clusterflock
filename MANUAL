@@ -1,15 +1,24 @@
-## QUICK START ##
-
 Clusterflock clusters entities using a modified flocking algorithm.
 
-Copy clusterflock.pl into your $PATH and install dependencies.
+## QUICK START ##
 
-Run clusterflock like so:
+Run clusterflock from its Docker image:
 
-clusterflock.pl -i indir_fastas/ -c config.boids.simulations -l table_of_distances \
--s all -b 1 -d -x -o output_dir/
+docker run -v /mount/path/on/host:/home/test -it narechan/clusterflock-0.1
 
-Find the flocking movie in output_dir/final.gif
+Run clusterflock on the set of fastas in the test data corresponding to 4 
+underlying topologies:
+
+clusterflock.pl -i test_data/4/fastas/ -c config.boids.simulations \ 
+		-l test_data/4/4.lds -s all -b 1 -d -x -o /home/test/4_out
+
+Run the clusterflock simulations script on the 4 topology set with 10 
+clusterflock replicates executed in parallel:
+
+clusterflock_simulations.pl -c config.boids.simulations -r 10 -p 10 -o /home/test/4_sim/ \
+			    -i test_data/4/fastas/ -l test_data/4/4.lds \ 
+			    -j /home/clusterflock/dependencies/elki-bundle-0.6.5~20141030.jar \
+			    -k 4 -f 500 > /home/test/4_sim.avg_jaccard
 
 ## INTRODUCTION TO CLUSTERFLOCK ##
 
@@ -37,32 +46,51 @@ your installation
 
 ## INSTALLATION ##
 
-To install clusterflock copy clusterflock.pl, pp_pa.pl, and 
-clusterflock_simulations.pl into your $PATH
+Though the flocking algorithm itself is implemented in pure PERL, several downstream
+components involving drawing frames, computing density based clusters from those frames,
+and compiling movies require external pieces of software called by clusterflock.pl
+and clusterflock_simulations.pl. 
 
-Though the flocking algorithm itself is implemented in pure PERL, several downstream 
-components involving drawing frames, computing density based clusters from those frames, 
-and compiling movies require external pieces of software called by clusterflock.pl 
-and clusterflock_simulations.pl. These include:
+To install clusterflock easily, use its docker image:
+docker run -v /mount/path/on/host:/home/test -it narechan/clusterflock-0.1
+
+This will provide a fully configured linux environment with all program dependencies 
+installed, including:
 
 Gnuplot, for plotting frames as gifs.
 Gifscicle, for creating animated gifs.
 ImageMagick, for converting between image formats
 ELKI, for spatial clustering of flocking frames, particularly the OPTICS clustering 
 algorithm. The full path to the location of the ELKI jar file must be specified in the 
-clusterflock config file as detailed below.
-(clusterflock-0.1/dependencies/elki-bundle-0.6.5~20141030.jar)
+clusterflock config file as detailed below
+(clusterflock-0.1/dependencies/elki-bundle-0.6.5~20141030.jar).
 
+The image also contains the following CPAN modules:
 
-Clusterflock.pl also requires the following perl modules (readily installed through CPAN):
 Getopt::Long
 List::MoreUtils qw(part)
 List::Util qw(shuffle)
 Chart::Gnuplot
-
-Clusterflock_simulations.pl requires the following perl modules (cpan):
 use Parallel::ForkManager;
 use Statistics::Descriptive;
+
+To install clusterflock manually follow the procedure outlined in the Dockerfile, roughly:
+1. Program dependencies (if Ubuntu, or with yum, or from source):
+   apt-get update && \
+    apt-get install -y \	
+    gifsicle \
+    gnuplot \
+    imagemagick
+2. Perl dependencies (also available through interactive CPAN)
+   cpanm List::MoreUtils \
+    List::Util \
+    Getopt::Long \
+    Chart::Gnuplot \
+    Parallel::ForkManager \
+    Statistics::Descriptive
+3. Pull clusterflock code:
+   git clone https://github.com/narechan/clusterflock.git
+4. Put *.pl in $PATH
 
 ## EXECUTING THE SIMULATIONS SCRIPT TO TEST YOUR INSTALLATION ##
 
@@ -73,7 +101,7 @@ underlying topologies modeled. So for example, if you wish to test clusterflock 
 replicates on a 100 partitions dataset whose loci are described by four topologies, you would run:
 
 clusterflock_simulations.pl -c config.boids.simulations -r 100 -p 100 -o test_out/ \
--i test_data/4/fastas/ -l test_data/4/4.lds -j /path/to/elki.jar -k 4 -f 500
+-i test_data/4/fastas/ -l test_data/4/4.lds -j /path/to/elki.jar -k 4 -f 500 > avg.jaccard
 
 Note that this will fork each clusterflock replicated in parallel. If you don't have 
 access to a multicore machine, reduce -p.
