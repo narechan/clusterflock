@@ -46,20 +46,16 @@ and compiling movies require external pieces of software called by clusterflock.
 and clusterflock_simulations.pl. These include:
 
 Gnuplot, for plotting frames as gifs.
-(clusterflock-0.1/dependencies/gnuplot-5.0.1.tar.gz)
-
 Gifscicle, for creating animated gifs.
-(clusterflock-0.1/dependencies/gifsicle-1.88.tar.gz)
-
+ImageMagick, for converting between image formats
 ELKI, for spatial clustering of flocking frames, particularly the OPTICS clustering 
 algorithm. The full path to the location of the ELKI jar file must be specified in the 
 clusterflock config file as detailed below.
 (clusterflock-0.1/dependencies/elki-bundle-0.6.5~20141030.jar)
 
+
 Clusterflock.pl also requires the following perl modules (readily installed through CPAN):
 Getopt::Long
-Pod::Usage
-POSIX
 List::MoreUtils qw(part)
 List::Util qw(shuffle)
 Chart::Gnuplot
