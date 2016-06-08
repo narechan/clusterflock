@@ -8,6 +8,6 @@ ALIGNMENT_FACTOR = 1
 ITERATIONS = 500
 RADIUS = 10
 VELOCITY_LIMIT = 2
-JARFILE=/home/apurva/packages/elki.jar
+JARFILE=/home/clusterflock/dependencies/elki-bundle-0.6.5~20141030.jar
 MINPTS=20
 XI=0.15
