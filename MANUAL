@@ -44,6 +44,35 @@ clusterflock replicates.
 clusterflock_simulations.pl is a wrapper around clusterflock.pl designed to test 
 your installation
 
+## ARCHIVED DATA ##
+
+We have archived the complete dataset analyzed in the manuscipt here:
+
+https://dl.dropboxusercontent.com/u/15070969/clusterflock_data_archive.tar.gz
+
+This archive contains sequences, LD matrices, and R scripts used to construct the simulation
+curves in Figures 3 and 4, and the S. aureus data used to test clusterflock's performance
+on an known large-scale hybridization event. All datasets are further described in
+"Clusterflock: A Flocking Algorithm for Isolating Congruent Phylogenomic Datasets."
+
+The two directories simulations_data/datasets_with_[missing/rate]_data contain the fasta files
+simulated by seq-gen for each combination of missing data (or evolutionary rate),
+topological complexity, and replicate we tested. For example, 0.1_6_7 indicates the
+seventh replicate under 10% missing data and 6 underlying topologies. And 1.75,0.25_4_2
+indicates the second replicate under 7X relative evolutionary rate with 4 underlying
+topologies.
+
+The two directories simulations_data/ld_matrices_with_[missing/rate]_data contain all pairwise
+distance matrices of the simulated datasets described above. Naming conventions are the same.
+
+The directory saureus_data contains the pairwise distance matrix for the S. aureus dataset
+(saureus_hybrid.dist.matrix.header), the list of genes corresponding to the hybridzation region 
+(hybridized_region.higlighted_genelist), and the collection of orthologous genes clustered (ogs).
+
+Finally, the R scripts included here accept as input these ld matrices and calculate
+clusters with three seperate clustering techniques: MDS (using cmdscale), k-medoids
+(using PAM), and hierarchical clustering (using hclust).
+
 ## INSTALLATION ##
 
 Though the flocking algorithm itself is implemented in pure PERL, several downstream
@@ -51,11 +80,13 @@ components involving drawing frames, computing density based clusters from those
 and compiling movies require external pieces of software called by clusterflock.pl
 and clusterflock_simulations.pl. 
 
-To install clusterflock easily, use its docker image:
+To install clusterflock easily, use its remote docker image at docker hub:
 docker run -v /mount/path/on/host:/home/test -it narechan/clusterflock-0.1
 
+Or use the dockerfile in the distribution to create your own local image.
+
 This will provide a fully configured linux environment with all program dependencies 
-installed, including:
+installed, including:	  
 
 Gnuplot, for plotting frames as gifs.
 Gifscicle, for creating animated gifs.
